@@ -7,17 +7,18 @@ import math
 
 class Poly():
 
-    points = []
-    
     def __init__(self, image):
-        Poly.image = image
-        self.img = cv2.imread(Poly.image)
-        self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+        #Poly.image = image
+        self.img1 = cv2.imread(image)
+        self.img2 = cv2.cvtColor(self.img1, cv2.COLOR_BGR2RGB)
         self.fig = plt.figure()
+        self.dir = os.path.dirname(image)
+        self.points = []
+        self.pts = []
 
     def getCoord(self):
         " show image, call __onclick(), return coordinates " 
-        plt.imshow(self.img)
+        plt.imshow(self.img2)
         cid = self.fig.canvas.mpl_connect('button_press_event', self.__onclick)
         plt.show()
         return self.points
@@ -28,27 +29,20 @@ class Poly():
         plt.plot(event.xdata, event.ydata, '.', color='red', markersize=16)
         self.fig.canvas.draw()
 
-
-class Mask(Poly):
-
-    def __init__(self):
-        self.image = Poly.image
-        self.pts = np.array(Poly.points, np.dtype('int'))
-        self.img = cv2.imread(self.image)
-        self.dir = os.path.dirname(self.image)
-        
     def mask(self):
+        " ... " 
+        self.pts = np.array(self.points, np.dtype('int'))
+
         # Crop the bounding rect
         rect = cv2.boundingRect(self.pts)
         x,y,w,h = rect
-        croped = self.img[y:y+h, x:x+w].copy()
+        croped = self.img1[y:y+h, x:x+w].copy()
         # Make mask
         self.pts = self.pts - self.pts.min(axis=0)
         mask = np.zeros(croped.shape[:2], np.uint8)
         cv2.drawContours(mask, [self.pts], -1, (255, 255, 255), -1, cv2.LINE_AA)
         # Do bit-op
         dst = cv2.bitwise_and(croped, croped, mask=mask)
-        
         # Add the white background
         bg = np.ones_like(croped, np.uint8)*255
         cv2.bitwise_not(bg,bg, mask=mask)
@@ -63,12 +57,11 @@ class Mask(Poly):
         cv2.destroyAllWindows()
 
 
-class Stainer(Mask):
+class Stainer():
     " STAINER FOLTOZÓ MÓDSZER/METHOD "
 
     def __init__(self, path,colors):
         self.path = path
-        #self.im = Mask.mask
         self.colors = colors
         self.stColorInts = [(0,254,255)]
         self.stColors = []
@@ -129,15 +122,17 @@ class Stainer(Mask):
         return self.stData
 
 
-path = 'c:\\temp\\K_09.24.PNG'
-t = Poly(path)
-points = t.getCoord()
-#print(points)
-m = Mask()
-#print(m.pts)
-masked = m.mask()
-img = "c:\\temp\\dst2.png"
-colors = 16
-s = Stainer(img,colors)
-print(s.stain())
+if __name__ == "__main__":
+
+    path = 'c:\\temp\\K_09.24.PNG'
+    t = Poly(path)
+    points = t.getCoord()
+    #print(points)
+    masked = t.mask()
+    #print(t.pts)
+
+    img = "c:\\temp\\dst2.png"
+    colors = 16
+    s = Stainer(img,colors)
+    print(s.stain())
 
