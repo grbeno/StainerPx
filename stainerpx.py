@@ -6,67 +6,74 @@ import os
 import math
 
 class Poly():
+
+    points = []
     
-    def __init__(self, path):
-        self.fname = path
-        self.img = cv2.imread(self.fname)
+    def __init__(self, image):
+        Poly.image = image
+        self.img = cv2.imread(Poly.image)
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
-        self.point = []
         self.fig = plt.figure()
 
     def getCoord(self):
-        ax = self.fig.add_subplot(111)
+        " show image, call __onclick(), return coordinates " 
         plt.imshow(self.img)
         cid = self.fig.canvas.mpl_connect('button_press_event', self.__onclick)
         plt.show()
-        return self.point
+        return self.points
 
     def __onclick(self,event):
-        self.point.append((event.xdata,event.ydata))
-        plt.plot(event.xdata, event.ydata, '.', linewidth=2, color='red', markersize=16)
+        " onclick event -> draw the points, add pixel's x,y coordinates to list "
+        self.points.append((event.xdata,event.ydata))
+        plt.plot(event.xdata, event.ydata, '.', color='red', markersize=16)
         self.fig.canvas.draw()
-        return self.point
 
 
-class Mask():
+class Mask(Poly):
 
-    def __init__(self, path,pts):
-        self.fname = path
-        self.pts = np.array(pts, np.dtype('int'))
-        self.img = cv2.imread(self.fname)
-        self.dir = os.path.dirname(self.fname)
-    
+    def __init__(self):
+        self.image = Poly.image
+        self.pts = np.array(Poly.points, np.dtype('int'))
+        self.img = cv2.imread(self.image)
+        self.dir = os.path.dirname(self.image)
+        
     def mask(self):
-        ## (1) Crop the bounding rect
+        # Crop the bounding rect
         rect = cv2.boundingRect(self.pts)
         x,y,w,h = rect
         croped = self.img[y:y+h, x:x+w].copy()
-        ## (2) make mask
+        # Make mask
         self.pts = self.pts - self.pts.min(axis=0)
         mask = np.zeros(croped.shape[:2], np.uint8)
         cv2.drawContours(mask, [self.pts], -1, (255, 255, 255), -1, cv2.LINE_AA)
-        ## (3) do bit-op
+        # Do bit-op
         dst = cv2.bitwise_and(croped, croped, mask=mask)
         
-        ## (4) add the white background
+        # Add the white background
         bg = np.ones_like(croped, np.uint8)*255
         cv2.bitwise_not(bg,bg, mask=mask)
         res = bg + dst
-        cv2.imwrite(f"{self.dir}\\dst2.png", res)
+        masked = f"{self.dir}\\dst2.png"
+        cv2.imwrite(masked,res)
         
-        return res
+        # Show image
+        cv2.imshow('image',res)
+        cv2.waitKey(0)   
+        # Closing all open windows 
+        cv2.destroyAllWindows()
 
 
-class Stainer():
+class Stainer(Mask):
     " STAINER FOLTOZÓ MÓDSZER/METHOD "
 
     def __init__(self, path,colors):
         self.path = path
+        #self.im = Mask.mask
         self.colors = colors
         self.stColorInts = [(0,254,255)]
         self.stColors = []
         self.stData = []
-        self.dir = os.path.dirname(self.path)
+        self.dir = os.path.dirname(path)
 
     def __createStColors(self):
         " Szürkeárnyalatok intervallumai + átfestő/foltozó színek -- grayscaled intervals + colors to stain - min:2, max:16"
@@ -111,6 +118,13 @@ class Stainer():
         
         new = cv2.cvtColor(new, cv2.COLOR_BGR2RGB)
         cv2.imwrite(f'{self.dir}\\stain.png',new)
+        
+        # Show image
+        cv2.imshow('image',new)
+        cv2.waitKey(0)   
+        # Closing all open windows 
+        cv2.destroyAllWindows()
+        
         self.stData = [float(format(data/(size-self.stData[0])*100,'.2f')) for data in self.stData]
         return self.stData
 
@@ -119,17 +133,11 @@ path = 'c:\\temp\\K_09.24.PNG'
 t = Poly(path)
 points = t.getCoord()
 #print(points)
-m = Mask(path,points)
+m = Mask()
 #print(m.pts)
 masked = m.mask()
-
-cv2.imshow('image',masked)
-cv2.waitKey(0)   
-#closing all open windows 
-cv2.destroyAllWindows()
-
 img = "c:\\temp\\dst2.png"
-colors = 12
+colors = 16
 s = Stainer(img,colors)
 print(s.stain())
 
