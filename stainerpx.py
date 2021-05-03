@@ -1,6 +1,5 @@
 import cv2
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 import os
 import math
@@ -8,7 +7,6 @@ import math
 class Poly():
 
     def __init__(self, image):
-        #Poly.image = image
         self.img1 = cv2.imread(image)
         self.img2 = cv2.cvtColor(self.img1, cv2.COLOR_BGR2RGB)
         self.fig = plt.figure()
@@ -56,17 +54,19 @@ class Poly():
         # Closing all open windows 
         cv2.destroyAllWindows()
 
+        return masked
+
 
 class Stainer():
     " STAINER FOLTOZÓ MÓDSZER/METHOD "
 
-    def __init__(self, path,colors):
-        self.path = path
+    def __init__(self, image,colors):
+        self.image = image
         self.colors = colors
         self.stColorInts = [(0,254,255)]
         self.stColors = []
         self.stData = []
-        self.dir = os.path.dirname(path)
+        self.dir = os.path.dirname(image)
 
     def __createStColors(self):
         " Szürkeárnyalatok intervallumai + átfestő/foltozó színek -- grayscaled intervals + colors to stain - min:2, max:16"
@@ -92,9 +92,9 @@ class Stainer():
 
     def stain(self):
         " Stainer folt/színbecslő módszer - Stainer method for colour measuring "
-        gray = cv2.imread(self.path)
+        gray = cv2.imread(self.image)
         gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
-        new = cv2.imread(self.path)
+        new = cv2.imread(self.image)
         height, width = new.shape[1], new.shape[0]
         size = height * width
 
@@ -130,9 +130,8 @@ if __name__ == "__main__":
     #print(points)
     masked = t.mask()
     #print(t.pts)
-
-    img = "c:\\temp\\dst2.png"
+    #im = "c:\\temp\\dst2.png"
     colors = 16
-    s = Stainer(img,colors)
+    s = Stainer(masked,colors)
     print(s.stain())
 
